@@ -30,8 +30,9 @@ private:
     int document_count_ = 0;
     bool IsStopWord(const string &word) const;
     vector<string> SplitIntoWordsNoStop(const string &text) const;
-    set<string> ParseQuery(const string &text) const;
-    vector<Document> FindAllDocuments(const set<string> &query_words) const;
+    map<string, bool> ParseQuery(const string &text) const;
+    double CountInverseDocumentFrequency(const string &word) const;
+    vector<Document> FindAllDocuments(const map<string, bool> &query_words) const;
 };
 
 void SearchServer::SetStopWords(const string &text) {
@@ -42,18 +43,21 @@ void SearchServer::SetStopWords(const string &text) {
 
 void SearchServer::AddDocument(int document_id, const string &document) {
     const vector<string> words = SplitIntoWordsNoStop(document);
+    map<string, double> term_frequency;
     for (const string &word : words) {
-        double term_frequency = count(words.begin(), words.end(), word) / double(words.size());
-        library_[word].insert({ document_id, term_frequency });
+        ++term_frequency[word] = term_frequency[word] / static_cast<double>(words.size());
+    }
+    for (const string &word : words) {
+        library_[word].insert({ document_id, term_frequency[word] });
     }
     document_count_++;
 }
 
 vector<Document> SearchServer::FindTopDocuments(const string &raw_query) const {
-    const set<string> query_words = ParseQuery(raw_query);
+    const map<string, bool> query_words = ParseQuery(raw_query);
     auto matched_documents = FindAllDocuments(query_words);
     sort(matched_documents.begin(), matched_documents.end(), [](const Document &lhs, const Document &rhs) {
-            return lhs.relevance > rhs.relevance;
+        return lhs.relevance > rhs.relevance;
     });
     if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
         matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
@@ -75,33 +79,34 @@ vector<string> SearchServer::SplitIntoWordsNoStop(const string &text) const {
     return words;
 }
 
-set<string> SearchServer::ParseQuery(const string &text) const {
-    set<string> query_words;
+map<string, bool> SearchServer::ParseQuery(const string &text) const {
+    map<string, bool> query_words;
     for (const string &word : SplitIntoWordsNoStop(text)) {
-        query_words.insert(word);
+        if (word[0] == '-') {
+            string minus_word = word;
+            minus_word.erase(0, 1);
+            query_words[minus_word] = true;
+            continue;
+        }
+        if (!query_words.count(word)) {
+            query_words.insert({ word, false });
+        }
     }
     return query_words;
 }
 
-vector<Document> SearchServer::FindAllDocuments(const set<string> &query_words) const {
+double SearchServer::CountInverseDocumentFrequency(const string &word) const {
+    return log(static_cast<double>(document_count_) / library_.at(word).size());
+}
+
+vector<Document> SearchServer::FindAllDocuments(const map<string, bool> &query_words) const {
     vector<Document> matched_documents;
     map<int, double> sorted_results;
-    for (const string &word : query_words) {
-        if (library_.count(word) != 0) {
-            double inverse_document_frequency = log(double(document_count_) / library_.at(word).size());
-            for (const pair<int, double> &document : library_.at(word)) {
+    for (const pair<string, bool> &word : query_words) {
+        if (library_.count(word.first) != 0 && !word.second) {
+            double inverse_document_frequency = CountInverseDocumentFrequency(word.first);
+            for (const pair<int, double> &document : library_.at(word.first)) {
                 sorted_results[document.first] += inverse_document_frequency * document.second;
-            }
-        }
-    }
-    for (const string& word : query_words) {
-        if (word[0] == '-') {
-            string minus = word;
-            minus.erase(0, 1);
-            if (library_.count(minus) != 0) {
-                for (const pair<int, double> &document : library_.at(minus)) {
-                    sorted_results.erase(document.first);
-                }
             }
         }
     }
