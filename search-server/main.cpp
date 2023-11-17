@@ -52,8 +52,8 @@ void SearchServer::AddDocument(int document_id, const string &document) {
     for (const string &word : words) {
         ++term_frequency[word];
     }
-    for (const pair<string, double> &term : term_frequency) {
-        term_frequency[term.first] = term_frequency[term.first] / static_cast<double>(words.size());
+    for (auto &term : term_frequency) {
+        term.second /= static_cast<double>(words.size());
     }
     for (const string &word : words) {
         library_[word].insert({ document_id, term_frequency[word] });
@@ -126,7 +126,7 @@ vector<Document> SearchServer::FindAllDocuments(const WordsInfo &query_words) co
     }
     for (const string &word : query_words.minus_words) {
         if (library_.count(word) != 0) {
-            for (const pair<int, double> document : library_.at(word)) {
+            for (const pair<int, double> &document : library_.at(word)) {
                 sorted_results.erase(document.first);
             }
         }
