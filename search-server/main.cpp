@@ -2,6 +2,7 @@
 #include <cmath>
 #include <iostream>
 #include <map>
+#include <numeric>
 #include <set>
 #include <string>
 #include <utility>
@@ -67,7 +68,7 @@ private:
 };
 
 void SearchServer::SetStopWords(const string &text) {
-    for (const string& word : SplitIntoWords(text)) {
+    for (const string &word : SplitIntoWords(text)) {
         stop_words_.insert(word);
     }
 }
@@ -85,13 +86,9 @@ template <class Type>
 vector<Document> SearchServer::FindTopDocuments(const string &raw_query, Type predicate) const {
     const Query query = ParseQuery(raw_query);
     auto matched_documents = FindAllDocuments(query, predicate);
+    const double EPSILON = 1e-6;
     sort(matched_documents.begin(), matched_documents.end(), [](const Document &lhs, const Document &rhs) {
-        if (abs(lhs.relevance - rhs.relevance) < 1e-6) {
-            return lhs.rating > rhs.rating;
-        }
-        else {
-            return lhs.relevance > rhs.relevance;
-        }
+        return abs(lhs.relevance - rhs.relevance) < EPSILON ? lhs.rating > rhs.rating : lhs.relevance > rhs.relevance;
     });
     if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
         matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
@@ -107,9 +104,7 @@ vector<Document> SearchServer::FindTopDocuments(const string &raw_query, Documen
 }
 
 vector<Document> SearchServer::FindTopDocuments(const string &raw_query) const {
-    auto matched_documents = FindTopDocuments(raw_query, [](int document_id, DocumentStatus status, int rating) {
-        return status == DocumentStatus::ACTUAL;
-    });
+    auto matched_documents = FindTopDocuments(raw_query, DocumentStatus::ACTUAL);
     return matched_documents;
 }
 
@@ -158,10 +153,9 @@ int SearchServer::ComputeAverageRating(const vector<int> &ratings) {
     if (ratings.empty()) {
         return 0;
     }
-    int rating_sum = 0;
-    for (const int rating : ratings) {
-        rating_sum += rating;
-    }
+    const int rating_sum = accumulate(ratings.begin(), ratings.end(), 0, [](const int &first, const int &second) {
+        return first + second;
+    });
     return rating_sum / static_cast<int>(ratings.size());
 }
 
@@ -177,7 +171,7 @@ SearchServer::QueryWord SearchServer::ParseQueryWord(string text) const {
 
 SearchServer::Query SearchServer::ParseQuery(const string &text) const {
     Query query;
-    for (const string &word : SplitIntoWords(text)) {
+    for (const string& word : SplitIntoWords(text)) {
         const QueryWord query_word = ParseQueryWord(word);
         if (!query_word.is_stop) {
             if (query_word.is_minus) {
@@ -204,7 +198,8 @@ vector<Document> SearchServer::FindAllDocuments(const Query &query, Type predica
         }
         const double inverse_document_freq = ComputeWordInverseDocumentFreq(word);
         for (const auto &document : word_to_document_freqs_.at(word)) {
-            if (predicate(document.first, documents_.at(document.first).status, documents_.at(document.first).rating)) {
+            DocumentData rating_and_status = documents_.at(document.first);
+            if (predicate(document.first, rating_and_status.status, rating_and_status.rating)) {
                 document_to_relevance[document.first] += document.second * inverse_document_freq;
             }
         }
@@ -244,9 +239,9 @@ int main() {
         PrintDocument(document);
     }
     cout << "Even ids:"s << endl;
-    for (const Document &document : search_server.FindTopDocuments("пушистый ухоженный кот"s, [](int document_id, DocumentStatus status, int rating) { 
-	        return document_id % 2 == 0; 
-		})) {
+    for (const Document &document : search_server.FindTopDocuments("пушистый ухоженный кот"s, [](int document_id, DocumentStatus status, int rating) {
+            return document_id % 2 == 0;
+        })) {
         PrintDocument(document);
     }
     return 0;
