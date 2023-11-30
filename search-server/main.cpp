@@ -111,9 +111,9 @@ private:
     template <class Type>
     vector<Document> FindAllDocuments(const Query &query, Type predicate) const;
 
-    static bool IsValid(const char &c, int &count, char &previous);
+    static bool CheckCharacter(const char &c, int &count, char &previous);
 
-    static bool CheckIsValid(const string &text);
+    static bool CheckOnRightUsageOfMinuses(const string &text);
 
     static bool CheckOnSpecialCharactersExistence(const string &text);
 };
@@ -133,7 +133,7 @@ void SearchServer::AddDocument(int document_id, const string &document, Document
 
 template <class Type>
 vector<Document> SearchServer::FindTopDocuments(const string &raw_query, Type predicate) const {
-    if (!CheckIsValid(raw_query)) {
+    if (!CheckOnRightUsageOfMinuses(raw_query)) {
         throw invalid_argument("Wrong query has been inputed.");
     }
     const Query query = ParseQuery(raw_query);
@@ -163,7 +163,7 @@ int SearchServer::GetDocumentCount() const {
 }
 
 tuple<vector<string>, DocumentStatus> SearchServer::MatchDocument(const string &raw_query, int document_id) const {
-    if (!CheckIsValid(raw_query)) {
+    if (!CheckOnRightUsageOfMinuses(raw_query)) {
         throw invalid_argument("Wrong query has been inputed.");
     }
     const Query query = ParseQuery(raw_query);
@@ -192,16 +192,7 @@ int SearchServer::GetDocumentId(int index) const {
     if (index < 0 || index >= GetDocumentCount()) {
         throw out_of_range("You are out of range.");
     }
-    int count = 0;
-    int found_doc_id = -1;
-    for (const int &id: document_ids_) {
-        if (count == index) {
-            found_doc_id = id;
-            break;
-        }
-        ++count;
-    }
-    return found_doc_id;
+    return document_ids_[index];
 }
 
 bool SearchServer::IsStopWord(const string &word) const {
@@ -294,7 +285,7 @@ vector<Document> SearchServer::FindAllDocuments(const Query &query, Type predica
     return matched_documents;
 }
 
-bool SearchServer::IsValid(const char &c, int &count, char &previous) {
+bool SearchServer::CheckCharacter(const char &c, int &count, char &previous) {
     if (c == ' ' && previous == '-') {
         return false;
     }
@@ -310,11 +301,11 @@ bool SearchServer::IsValid(const char &c, int &count, char &previous) {
     return true;
 }
 
-bool SearchServer::CheckIsValid(const string &text) {
+bool SearchServer::CheckOnRightUsageOfMinuses(const string &text) {
     int count = 0;
     char previous = ' ';
     if (!all_of(text.begin(), text.end(), [&count, &previous](const char &got) {
-        return IsValid(got, count, previous);
+        return CheckCharacter(got, count, previous);
     })) { 
         return false; 
     }
@@ -325,13 +316,14 @@ bool SearchServer::CheckIsValid(const string &text) {
 }
 
 bool SearchServer::CheckOnSpecialCharactersExistence(const string &text) {
-    if (none_of(text.begin(), text.end(), [](const char &got) {
+    return !none_of(text.begin(), text.end(), [](const char &got) {
         return got >= '\0' && got < ' ';
-    })) {
-        return false;
-    }
-    return true;
+    });
 }
+
+// Я не совсем понял, какие два метода сделать, как один. 
+// В прошлый раз я прислал метод IsValid(), который проверял символ и на спецсимволы, и на минусы. 
+// Но Вы сказали, что их надо разделить.
 
 // ========================= для примера =========================
 
