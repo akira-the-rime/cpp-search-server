@@ -133,9 +133,6 @@ void SearchServer::AddDocument(int document_id, const string &document, Document
 
 template <class Type>
 vector<Document> SearchServer::FindTopDocuments(const string &raw_query, Type predicate) const {
-    if (!CheckOnRightUsageOfMinuses(raw_query)) {
-        throw invalid_argument("Wrong query has been inputed.");
-    }
     const Query query = ParseQuery(raw_query);
     auto matched_documents = FindAllDocuments(query, predicate);
     const double EPSILON = 1e-6;
@@ -163,9 +160,6 @@ int SearchServer::GetDocumentCount() const {
 }
 
 tuple<vector<string>, DocumentStatus> SearchServer::MatchDocument(const string &raw_query, int document_id) const {
-    if (!CheckOnRightUsageOfMinuses(raw_query)) {
-        throw invalid_argument("Wrong query has been inputed.");
-    }
     const Query query = ParseQuery(raw_query);
     vector<string> matched_words;
     for (const string &word : query.plus_words) {
@@ -192,7 +186,7 @@ int SearchServer::GetDocumentId(int index) const {
     if (index < 0 || index >= GetDocumentCount()) {
         throw out_of_range("You are out of range.");
     }
-    return document_ids_[index];
+    return document_ids_.at(index);
 }
 
 bool SearchServer::IsStopWord(const string &word) const {
@@ -223,6 +217,9 @@ int SearchServer::ComputeAverageRating(const vector<int> &ratings) {
 }
 
 SearchServer::QueryWord SearchServer::ParseQueryWord(string text) const {
+    if (!CheckOnRightUsageOfMinuses(text)) {
+        throw invalid_argument("Wrong query has been inputed.");
+    }
     bool is_minus = false;
     // Word shouldn't be empty
     if (text[0] == '-') {
@@ -320,10 +317,6 @@ bool SearchServer::CheckOnSpecialCharactersExistence(const string &text) {
         return got >= '\0' && got < ' ';
     });
 }
-
-// Я не совсем понял, какие два метода сделать, как один. 
-// В прошлый раз я прислал метод IsValid(), который проверял символ и на спецсимволы, и на минусы. 
-// Но Вы сказали, что этот метод надо разделить.
 
 // ========================= для примера =========================
 
