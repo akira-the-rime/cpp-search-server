@@ -35,12 +35,12 @@ private:
 };
 
 template <typename Container>
-auto Paginate(const Container& c, size_t page_size) {
+auto Paginate(const Container &c, size_t page_size) {
     return Paginator(begin(c), end(c), page_size);
 }
 
-std::ostream& operator<<(std::ostream& os, const std::vector<Document>& object) {
-    for (const auto& document : object) {
+std::ostream& operator<<(std::ostream &os, const std::vector<Document> &object) {
+    for (const auto &document : object) {
         os << "{ document_id = "s << document.id << ", relevance = "s << document.relevance << ", rating = "s << document.rating << " }"s;
     }
     return os;

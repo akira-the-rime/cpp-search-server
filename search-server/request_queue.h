@@ -9,13 +9,13 @@
 
 class RequestQueue {
 public:
-    explicit RequestQueue(const SearchServer& search_server) : server_link(search_server) { }
+    explicit RequestQueue(const SearchServer &search_server) : server_link(search_server) { }
 
     template <typename DocumentPredicate>
-    std::vector<Document> AddFindRequest(const std::string& raw_query, DocumentPredicate document_predicate);
+    std::vector<Document> AddFindRequest(const std::string &raw_query, DocumentPredicate document_predicate);
 
-    std::vector<Document> AddFindRequest(const std::string& raw_query, DocumentStatus stowed_status);
-    std::vector<Document> AddFindRequest(const std::string& raw_query);
+    std::vector<Document> AddFindRequest(const std::string &raw_query, DocumentStatus stowed_status);
+    std::vector<Document> AddFindRequest(const std::string &raw_query);
     int GetNoResultRequests() const;
 private:
     struct QueryResult {
@@ -24,11 +24,11 @@ private:
     };
     std::deque<QueryResult> requests_;
     const static int min_in_day_ = 1440;
-    const SearchServer& server_link;
+    const SearchServer &server_link;
 };
 
 template <typename DocumentPredicate>
-std::vector<Document> RequestQueue::AddFindRequest(const std::string& raw_query, DocumentPredicate document_predicate) {
+std::vector<Document> RequestQueue::AddFindRequest(const std::string &raw_query, DocumentPredicate document_predicate) {
     std::vector<Document> is_found = server_link.FindTopDocuments(raw_query, document_predicate);
     if (is_found.empty()) {
         QueryResult created_result;

@@ -15,4 +15,4 @@ enum class DocumentStatus {
     REMOVED,
 };
 
-void PrintDocument(const Document& document);
+void PrintDocument(const Document &document);

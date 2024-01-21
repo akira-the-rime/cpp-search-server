@@ -22,7 +22,6 @@ int main() {
     const auto search_results = search_server.FindTopDocuments("curly dog and"s);
     int page_size = 2;
     const auto pages = Paginate(search_results, page_size);
-    // ¬ыводим найденные документы по страницам
     for (auto page = pages.begin(); page != pages.end(); ++page) {
         std::cout << *page << std::endl;
         std::cout << "Page break"s << std::endl;
