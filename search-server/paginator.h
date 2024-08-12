@@ -7,29 +7,34 @@
 using namespace std::string_literals;
 
 template <class Iter>
-class Paginator {
+class Paginator final {
 public:
     explicit Paginator(const Iter begin, const Iter end, const size_t page_size) {
         unsigned int count = 0;
         auto it = begin;
         std::vector<Document> temp;
+
         while (it != end) {
             while (count < page_size && it != end) {
                 temp.push_back(*it);
                 ++it;
                 ++count;
             }
+
             paginated_.push_back(temp);
             temp.clear();
             count = 0;
         }
     }
+
     std::vector<std::vector<Document>>::const_iterator begin() const {
         return paginated_.begin();
     }
+
     std::vector<std::vector<Document>>::const_iterator end() const {
         return paginated_.end();
     }
+
 private:
     std::vector<std::vector<Document>> paginated_;
 };

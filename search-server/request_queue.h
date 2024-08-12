@@ -7,7 +7,7 @@
 #include "document.h"
 #include "search_server.h"
 
-class RequestQueue {
+class RequestQueue final {
 public:
     explicit RequestQueue(const SearchServer &search_server) : server_link(search_server) { }
 
@@ -17,11 +17,13 @@ public:
     std::vector<Document> AddFindRequest(const std::string &raw_query, DocumentStatus stowed_status);
     std::vector<Document> AddFindRequest(const std::string &raw_query);
     int GetNoResultRequests() const;
+
 private:
-    struct QueryResult {
+    struct QueryResult final {
         int shelf_life = 0;
         std::string raw_query_;
     };
+
     std::deque<QueryResult> requests_;
     const static int min_in_day_ = 1440;
     const SearchServer &server_link;
@@ -35,6 +37,7 @@ std::vector<Document> RequestQueue::AddFindRequest(const std::string &raw_query,
         created_result.raw_query_ = raw_query;
         requests_.push_back(created_result);
     }
+
     for (auto it = requests_.begin(); it != requests_.end() && requests_.size(); ++it) {
         if (++it->shelf_life == min_in_day_) {
             requests_.pop_front();

@@ -14,8 +14,10 @@ std::vector<std::string> SplitIntoWords(const std::string &text) {
             word += c;
         }
     }
+
     if (!word.empty()) {
         words.push_back(word);
     }
+
     return words;
 }

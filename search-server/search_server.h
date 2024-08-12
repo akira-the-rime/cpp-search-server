@@ -13,72 +13,62 @@
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
 
-class SearchServer {
+class SearchServer final {
 public:
-
-    explicit SearchServer(const std::string &text) : SearchServer(SplitIntoWords(text)) { }
+    explicit SearchServer(const std::string &text) 
+        : SearchServer(SplitIntoWords(text)) { 
+    }
 
     template <class StringContainer>
     explicit SearchServer(const StringContainer &stop_words);
 
     void AddDocument(int document_id, const std::string &document, DocumentStatus status, const std::vector<int> &ratings);
+    int GetDocumentCount() const;
+    int GetDocumentId(int index) const;
 
     template <class Type>
     std::vector<Document> FindTopDocuments(const std::string &raw_query, Type predicate) const;
-
     std::vector<Document> FindTopDocuments(const std::string &raw_query, DocumentStatus predicate) const;
-
     std::vector<Document> FindTopDocuments(const std::string &raw_query) const;
-
-    int GetDocumentCount() const;
 
     std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(const std::string &raw_query, int document_id) const;
 
-    int GetDocumentId(int index) const;
-
 private:
 
-    struct DocumentData {
+    struct DocumentData final {
         int rating;
         DocumentStatus status;
     };
 
-    struct QueryWord {
+    struct QueryWord final {
         std::string data;
         bool is_minus;
         bool is_stop;
     };
 
-    struct Query {
+    struct Query final {
         std::set<std::string> plus_words;
         std::set<std::string> minus_words;
     };
 
     std::set<std::string> stop_words_;
-    std::map<std::string, std::map<int, double>> word_to_document_freqs_;          // library
-    std::map<int, DocumentData> documents_;                              // documents and their ratings and status
-    std::vector<int> document_ids_;                                      // document IDs
+    std::map<std::string, std::map<int, double>> word_to_document_freqs_;
+    std::map<int, DocumentData> documents_;
+    std::vector<int> document_ids_;
 
+    double ComputeWordInverseDocumentFreq(const std::string& word) const;
     bool IsStopWord(const std::string &word) const;
-
-    std::vector<std::string> SplitIntoWordsNoStop(const std::string &text) const;
-
-    static int ComputeAverageRating(const std::vector<int> &ratings);
-
+    Query ParseQuery(const std::string& text) const;
     QueryWord ParseQueryWord(std::string text) const;
-
-    Query ParseQuery(const std::string &text) const;
-
-    double ComputeWordInverseDocumentFreq(const std::string &word) const;
+    std::vector<std::string> SplitIntoWordsNoStop(const std::string &text) const;
 
     template <class Type>
     std::vector<Document> FindAllDocuments(const Query &query, Type predicate) const;
 
     static bool CheckCharacter(const char &c, int &count, char &previous);
-
     static bool CheckOnRightUsageOfMinuses(const std::string &text);
-
     static bool CheckOnSpecialCharactersExistence(const std::string &text);
+    static int ComputeAverageRating(const std::vector<int>& ratings);
 };
 
 template <class StringContainer>
@@ -99,9 +89,11 @@ std::vector<Document> SearchServer::FindTopDocuments(const std::string &raw_quer
     sort(matched_documents.begin(), matched_documents.end(), [EPSILON](const Document &lhs, const Document &rhs) {
         return std::abs(lhs.relevance - rhs.relevance) < EPSILON ? lhs.rating > rhs.rating : lhs.relevance > rhs.relevance;
     });
+
     if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
         matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
     }
+
     return matched_documents;
 }
 
@@ -128,9 +120,11 @@ std::vector<Document> SearchServer::FindAllDocuments(const Query &query, Type pr
             document_to_relevance.erase(word.first);
         }
     }
+
     std::vector<Document> matched_documents;
     for (const auto &document : document_to_relevance) {
         matched_documents.push_back({ document.first, document.second, documents_.at(document.first).rating });
     }
+
     return matched_documents;
 }

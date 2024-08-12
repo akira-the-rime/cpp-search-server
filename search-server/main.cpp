@@ -19,6 +19,7 @@ int main() {
     search_server.AddDocument(8, "big cat fancy collar "s, DocumentStatus::ACTUAL, { 1, 2, 8 });
     search_server.AddDocument(9, "big dog sparrow Eugene"s, DocumentStatus::ACTUAL, { 1, 3, 2 });
     search_server.AddDocument(10, "big dog sparrow Vasiliy"s, DocumentStatus::ACTUAL, { 1, 1, 1 });
+
     const auto search_results = search_server.FindTopDocuments("curly dog and"s);
     int page_size = 2;
     const auto pages = Paginate(search_results, page_size);
